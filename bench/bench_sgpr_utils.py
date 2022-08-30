@@ -9,7 +9,7 @@ import tensorflow as tf
 from gpflow.utilities import parameter_dict
 from bench_utils import to_tf_scope, OsPath
 from monitor import Monitor
-from barelybiasedgp.selection import (
+from selection import (
     run_uniform_greedy_selection,
     make_inducing_selection_function,
     uniform_greedy_selection,

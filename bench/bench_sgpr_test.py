@@ -14,8 +14,8 @@ sys.path.append(cur_dir)
 
 from clitypes import FloatType, LogdirPath
 from bench_utils import tf_data_tuple, get_uci_dataset
-from barelybiasedgp.selection import uniform_greedy_selection
-from barelybiasedgp.scipy_copy import Scipy
+from selection import uniform_greedy_selection
+from scipy_copy import Scipy
 
 Dataset = Tuple[np.ndarray, np.ndarray]
 DatasetBundle = NamedTuple
@@ -33,7 +33,7 @@ __default_gambit_logs = "./default_gambit_logs"
 __datasets = click.Choice(["houseelectric", "song", "buzz", "3droad", "keggundirected"])
 
 
-# XLA_FLAGS="--xla_tensor_size_threshold=100MB" python bench_sgpr_test.py -s 0 -m 1000
+# XLA_FLAGS="--xla_try_split_tensor_size=100MB" python bench_sgpr_test.py -s 0 -m 1000
 
 
 @click.command()
@@ -56,7 +56,8 @@ def main(
     tf.random.set_seed(seed)
 
     xla_flag = "xla" if jit else None
-    data, data_test = get_uci_dataset(dataset_name)
+    seed = 0
+    data, data_test = get_uci_dataset(dataset_name,seed)
     x, y = data
     data = x, y
     num_data = x.shape[0]
@@ -163,23 +164,34 @@ def main(
     # elbo = loss_fn_phase_1_jit()
 
     loss_fn_phase_1_jit = tf.function(loss_grad_fn, jit_compile=jit)
-
+    loss_fn_phase_1_non_jit = tf.function(loss_grad_fn, jit_compile=False)
     # elbo, grad = loss_fn_phase_1_jit()
     # print(f"ELBO: {elbo.numpy()}, kernel variance gradient: {grad.numpy()}")
 
     values = loss_fn_phase_1_jit()
+    values_non_jit = loss_fn_phase_1_non_jit()
     if not isinstance(values, (list, tuple)):
         values = [values]
+        values_non_jit = [values_non_jit]
 
     numpy_values = []
+    numpy_values_non_jit = []
     for v in values:
         if isinstance(v, (list, tuple)):
             acc = [(v_ if v_ is None else v_.numpy()) for v_ in v]
             numpy_values.append(acc)
         else:
             numpy_values.append(v.numpy())
+    for v in values_non_jit:
+        if isinstance(v, (list, tuple)):
+            acc = [(v_ if v_ is None else v_.numpy()) for v_ in v]
+            numpy_values_non_jit.append(acc)
+        else:
+            numpy_values_non_jit.append(v.numpy())
 
     print(f"Values: {numpy_values}")
+    print(f"Non-JIT Values: {numpy_values_non_jit}")
+    np.testing.assert_allclose(numpy_values, numpy_values_non_jit, atol=1e-5)
 
 
 if __name__ == "__main__":

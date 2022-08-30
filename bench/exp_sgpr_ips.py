@@ -23,7 +23,7 @@ from bench_sgpr_utils import (
     create_monitor,
     update_optimizer_logs,
 )
-from barelybiasedgp.scipy_copy import Scipy
+from scipy_copy import Scipy
 
 CompileType = Union[Literal["xla", "tf", "none"], Union[Literal["xla", "tf"], None]]
 Dataset = Tuple[np.ndarray, np.ndarray]

@@ -149,6 +149,7 @@ bench/xla-dump
 
 bench/uci
 bench/logs*
+bench/xla-*
 jax
 
 # 
